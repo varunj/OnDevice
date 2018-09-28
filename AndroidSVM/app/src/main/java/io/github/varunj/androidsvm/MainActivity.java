@@ -1,4 +1,4 @@
-package io.github.varunj.svmandroid;
+package io.github.varunj.androidsvm;
 
 import android.content.Context;
 import android.os.Bundle;
@@ -12,6 +12,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Random;
+
+import io.github.varunj.svmandroid.R;
 
 
 public class MainActivity extends AppCompatActivity {
