@@ -13,7 +13,7 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Random;
 
-import io.github.varunj.svmandroid.R;
+import io.github.varunj.androidsvm.R;
 
 
 public class MainActivity extends AppCompatActivity {
