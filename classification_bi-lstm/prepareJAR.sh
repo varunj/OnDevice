@@ -1,5 +1,6 @@
 #!/bin/bash
 # copy to /home/varunj/Downloads/tf_on_mobile/tensorflow and execute
+
 ANDROID_HOME=/home/varunj/Downloads/android-sdk
 NDK_HOME=/home/varunj/Downloads/android-sdk/ndk-bundle
 DEPLOY_DIR=$(dirname $0)/deploy_android/tensorflow
