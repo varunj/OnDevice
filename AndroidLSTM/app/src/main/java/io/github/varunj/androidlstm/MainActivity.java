@@ -34,6 +34,9 @@ public class MainActivity extends AppCompatActivity {
         button_test_lstm = (Button) findViewById(R.id.button_test_lstm);
         text_result.setText("input,\nprediction");
 
+        final TensorFlowInferenceInterface inferenceInterface = new TensorFlowInferenceInterface(getAssets(), "frozen_model.pb");
+        final String[] outputNames =  new String[] {"dense/BiasAdd"};
+        final float[] outputs = new float[10];
 
         button_test_lstm.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
@@ -45,15 +48,12 @@ public class MainActivity extends AppCompatActivity {
                     String randomFileName = listOfFiles[randomizer.nextInt(listOfFiles.length)];
                     String fileName = ROOT_PATH + "/" + randomFileName;
                     float[] out = readFileFromAssets(getApplicationContext(), fileName);
+                    int[] inp_len = {out.length/2};
 
                     // tensorflow stuff
-                    int[] inp_len = {out.length/2};
-                    TensorFlowInferenceInterface inferenceInterface = new TensorFlowInferenceInterface(getAssets(), "frozen_model.pb");
                     inferenceInterface.feed("Placeholder", out, 1,200,2);
                     inferenceInterface.feed("Placeholder_2", inp_len, 1);
-                    String[] outputNames =  new String[] {"dense/BiasAdd"};
                     inferenceInterface.run(outputNames, true);
-                    float[] outputs = new float[10];
                     inferenceInterface.fetch("dense/BiasAdd", outputs);
                     text_result.setText(randomFileName.substring(0,randomFileName.length()-4) + ",\n" + CLASSES[findArgMax(outputs)]);
                 }
