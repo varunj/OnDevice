@@ -388,6 +388,8 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 //      fos.close();
 
       Canvas c = new Canvas(croppedBmp);
+//      croppedBmp.setPixel((int) detectionXY[0], (int) detectionXY[0], Color.BLACK);
+
       Paint paint = new Paint();
       paint.setStyle(Paint.Style.FILL);
       paint.setColor(Color.BLACK);
