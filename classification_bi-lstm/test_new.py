@@ -11,6 +11,7 @@ from tqdm import tqdm
 import tensorflow.contrib.slim as slim
 from sklearn.metrics import confusion_matrix
 import time
+import seaborn as sn
 
 # --------------- new added --------------
 config = tf.ConfigProto()
@@ -27,7 +28,8 @@ loss_graph=[]
 Validation_loss=0
 trueArr=[]
 PATH = 'trained_models/20180930-1100/bilstm_4665.ckpt'
-
+SEQ_PATH = '../data/test/*.txt'
+SEQ_PATH = '/home/varunj/Desktop/testvideo_seq/*.txt'
 
 def shuffle_data(labels, seq):
     temp = 0
@@ -40,7 +42,7 @@ dataSeq = []
 targetSeq = []
 length=[]
 predArr=[]
-for fileName in glob.glob("../data/test/*.txt"):
+for fileName in glob.glob(SEQ_PATH):
     file = pd.read_csv(fileName, delim_whitespace=True, header=None)
     fname = fileName.split('_')[-2]
     arr = np.array(file.ix[:, :])
@@ -149,4 +151,14 @@ with tf.Session() as sess:
         #print("Training loss after {0} epoch is {1}".format(epoch+1, total_loss_train))
     end_time = time.time()
 print (CLASSES)
-print(confusion_matrix(trueArr, predArr))   	
+cm = confusion_matrix(trueArr, predArr)
+print(cm)
+
+
+df_cm = pd.DataFrame(cm, index = [i for i in CLASSES],
+                  columns = [i for i in CLASSES])
+plt.figure(figsize = (10,7))
+plt.xlabel('Predicted')
+plt.ylabel('True')
+sn.heatmap(df_cm, annot=True,cmap='Blues', cbar=False)
+plt.show()
