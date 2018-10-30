@@ -1,0 +1,5 @@
+model_checkpoint_path: "bilstm_4.ckpt"
+all_model_checkpoint_paths: "bilstm_1.ckpt"
+all_model_checkpoint_paths: "bilstm_2.ckpt"
+all_model_checkpoint_paths: "bilstm_3.ckpt"
+all_model_checkpoint_paths: "bilstm_4.ckpt"

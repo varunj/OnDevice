@@ -113,6 +113,7 @@ output1 = tf.multiply(output_fw, output_bw, name='multiply')
 #print(state)
 #something can be added
 output = tf.layers.dense(inputs=output1, units=NOS_CLASSES, name='dense')
+# output1 = tf.nn.softmax(output, name='softmax')
 print (output)
 #loss_function
 loss=tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=output,labels=target1))
@@ -121,6 +122,16 @@ opt=tf.train.AdamOptimizer(learning_rate=LEARNING_RATE).minimize(loss)
 saver = tf.train.Saver()
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
+    
+
+    total = 0
+    for v in tf.trainable_variables():
+        dims = v.get_shape().as_list()
+        num  = int(np.prod(dims))
+        total += num
+        print('  %s \t\t Num: %d \t\t Shape %s ' % (v.name, num, dims))
+    print('\nTotal number of params: %d' % total)
+
     # saver.restore(sess,'/home/gaurav/Documents/DSNT_final/Bilstm_final/Bilstm _Model_30/model_Bilstm1.ckpt')
     for epoch in range(EPOCHS):
         total_loss_train=0

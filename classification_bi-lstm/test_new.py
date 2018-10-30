@@ -9,7 +9,7 @@ import glob
 import pandas as pd
 from tqdm import tqdm
 import tensorflow.contrib.slim as slim
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score
 import time
 import seaborn as sn
 
@@ -24,12 +24,15 @@ num_hidden = 30
 batch_size=1
 CLASSES = ('up','down','left','right','star','del','square','carret','tick','circlecc')
 NOS_CLASSES = len(CLASSES)
+CLASSES_ALL = ('up','down','left','right','star','del','square','carret','tick','circlecc', 'unclassified')
+NOS_CLASSES_ALL = len(CLASSES_ALL)
+
 loss_graph=[]
 Validation_loss=0
 trueArr=[]
 PATH = 'trained_models/20180930-1100/bilstm_4665.ckpt'
 SEQ_PATH = '../data/test/*.txt'
-SEQ_PATH = '/home/varunj/Desktop/testvideo_seq/*.txt'
+# SEQ_PATH = '/home/varunj/Github/OnDevice/testing/testvideo_seq/*.txt'
 
 def shuffle_data(labels, seq):
     temp = 0
@@ -40,6 +43,7 @@ def shuffle_data(labels, seq):
 
 dataSeq = []
 targetSeq = []
+targetSeq_all = []
 length=[]
 predArr=[]
 for fileName in glob.glob(SEQ_PATH):
@@ -51,12 +55,18 @@ for fileName in glob.glob(SEQ_PATH):
     for i in range(0, NOS_CLASSES):
         if (CLASSES[i]==fname):
             targetarr[i] = 1
+    targetarr_all = np.zeros(NOS_CLASSES_ALL)
+    for i in range(0, NOS_CLASSES_ALL):
+        if (CLASSES_ALL[i]==fname):
+            targetarr_all[i] = 1
     #l=arr.shape[0]
     #length.append(l)
     #arrstack = arr.reshape(1,l,2)
     dataSeq.append(arr)
     #targetarr=targetarr.reshape(1,10)
     targetSeq.append(targetarr)
+    targetSeq_all.append(targetarr_all)
+
     #print(fname, fileName)
 
 #print(len(dataSeq))
@@ -66,6 +76,7 @@ seq = np.arange(len(dataSeq))
 np.random.shuffle(seq)
 data = shuffle_data(dataSeq, seq)
 targets = shuffle_data(targetSeq, seq)
+targets_all = shuffle_data(targetSeq_all, seq)
 
 #data = np.array(dataSeq) 
 #target = np.array(targetSeq)
@@ -79,6 +90,7 @@ train_data_count = int(train_percent * data_count)
 train_data = data[:train_data_count]
 #test_data = data[train_data_count:]
 train_targets = targets[:train_data_count]
+train_targets_all = targets_all[:train_data_count]
 #test_targets = targets[train_data_count:]
 
 def Train_batchwise_data_toarray(curr_data):
@@ -114,6 +126,7 @@ output1 = tf.multiply(output_fw, output_bw, name='multiply')
 #print(state)
 #something can be added
 output = tf.layers.dense(inputs=output1, units=NOS_CLASSES, name='dense')
+output1 = tf.nn.softmax(output, name='softmax')
 #loss_function
 loss=tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=output,labels=target1))
 #optimization
@@ -135,16 +148,25 @@ with tf.Session() as sess:
         data,length=Train_batchwise_data_toarray(curr_data)
         length=np.array(length)
         curr_target = train_targets[j:(i+1)*batch_size]
-        result = sess.run(output, 
+        curr_target_all = train_targets_all[j:(i+1)*batch_size]
+        result = sess.run(output1, 
             {
                 data1: data,
                 _index: length
             }
         )
-        print("prediction is {} while actual class is {} ".format(CLASSES[np.argmax(result)],CLASSES[np.argmax(curr_target)]))     
-        predArr.append(np.argmax(result))
-        trueArr.append(np.argmax(curr_target))
-        if(np.argmax(result)==np.argmax(curr_target)):
+        print("prediction is {} while actual class is {} ".format(CLASSES[np.argmax(result)],CLASSES[np.argmax(curr_target)]))
+
+        if (np.max(result) > 0.75):
+            predicted = np.argmax(result)
+        else:
+            predicted = 10
+        
+        actual = np.argmax(curr_target_all)
+        print(predicted, actual)
+        predArr.append(predicted)
+        trueArr.append(actual)
+        if(predicted==actual):
             acc=acc+1
         print ("accuracy is:{}".format(acc))
         #total_loss_train+=loss_train
@@ -152,11 +174,16 @@ with tf.Session() as sess:
     end_time = time.time()
 print (CLASSES)
 cm = confusion_matrix(trueArr, predArr)
+print(accuracy_score(trueArr, predArr))
+print(precision_score(trueArr, predArr, average='weighted'))
+print(recall_score(trueArr, predArr, average='weighted'))
+print(f1_score(trueArr, predArr, average='weighted'))
+
 print(cm)
 
 
-df_cm = pd.DataFrame(cm, index = [i for i in CLASSES],
-                  columns = [i for i in CLASSES])
+df_cm = pd.DataFrame(cm, index = [i for i in CLASSES]+['unclassified'],
+                  columns = [i for i in CLASSES]+['unclassified'])
 plt.figure(figsize = (10,7))
 plt.xlabel('Predicted')
 plt.ylabel('True')
