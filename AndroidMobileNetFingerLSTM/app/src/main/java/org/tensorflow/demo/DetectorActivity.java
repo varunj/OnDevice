@@ -113,6 +113,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 
   // ---new
   static ArrayList<ArrayList<Float>> inpStream = new ArrayList<>();
+  static int counter=0;
   private static int[] intValues = new int[99 * 99];
   private static float[] floatValues = new float[99 * 99 * 3];
   private static final float IMAGE_MEAN = 128.0f;
@@ -120,9 +121,13 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
   Bitmap finalCrop = null;
   // ---new
 
+  private static String abc="abc";
+
+
   @Override
   public void onPreviewSizeChosen(final Size size, final int rotation) {
 
+    Log.d(abc,"onPreviewSizeChosen called");
     final float textSizePx =
         TypedValue.applyDimension(
             TypedValue.COMPLEX_UNIT_DIP, TEXT_SIZE_DIP, getResources().getDisplayMetrics());
@@ -231,6 +236,8 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 
   @Override
   protected void processImage() {
+    Log.d(abc,"processImage called");
+
     ++timestamp;
     final long currTimestamp = timestamp;
     byte[] originalLuminance = getLuminance();
@@ -315,7 +322,32 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                   // also change this in storeImage()
                 temp.add(location.left);                // (location.left) z2, (640-location.left) 5x
                 inpStream.add(temp);
-                System.out.println("xxx1: " + (temp.get(0)) + "," + (temp.get(1)));
+                boolean val;
+                val=inp_check();
+                Log.d(abc,"Val: " + val);
+                if (val==true & counter==1)
+                {
+                  Log.d(abc,"Val: " + "input stream clear");
+                  /*inpStream.clear();*/
+                  Toast toast =
+                          Toast.makeText(
+                                  getApplicationContext(), "Stop", Toast.LENGTH_SHORT);
+                  toast.show();
+                  Trigger_classification();
+                  counter=0;
+                  inpStream.clear();
+                }
+                else if (val==true & counter==0)
+                {
+                  Log.d(abc,"Val: " + "input stream clear");
+                  inpStream.clear();
+                  Toast toast =
+                          Toast.makeText(
+                                  getApplicationContext(), "Start", Toast.LENGTH_SHORT);
+                  toast.show();
+                  counter=1;
+                }
+                /*System.out.println("xxx1: " + (temp.get(0)) + "," + (temp.get(1)));*/
                 // ---new
 
               }
@@ -333,6 +365,43 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
     imageView_Out.setImageBitmap(finalCrop);
     // ---new
   }
+    // ---new
+  protected boolean inp_check() {
+
+    int leng=inpStream.size();
+    int thresh_value=8;
+    double x_sd=1000,y_sd=1000;
+     /* Log.d(abc,"inpcheck");*/
+     if(leng>=thresh_value)
+     {
+
+     /* for (ArrayList<Float> x : inpStream)
+      {
+          Log.d(abc,"inpcheck: " + (x.get(0)) + "," + (x.get(1)));
+      }*/
+      /*for(int i=0;i<10000;i++){}*/
+      float []numarray_x=new float[thresh_value];
+      float []numarray_y=new float[thresh_value];
+      for(int j=thresh_value-1,i=leng-1;j>=0;i--,j--)
+      {
+        numarray_x[j]=inpStream.get(i).get(0);
+        numarray_y[j]=inpStream.get(i).get(1);
+        /*Log.d(abc,"num_x: " + numarray_x[j]);
+        Log.d(abc,"num_y: " + numarray_y[j]);*/
+      }
+       x_sd=zMyFunctions.calculateSD(numarray_x);
+       y_sd=zMyFunctions.calculateSD(numarray_y);
+       Log.d(abc,"X_sd: " + x_sd);
+       Log.d(abc,"Y_sd: " + y_sd);
+     }
+     if(x_sd<3.5 & y_sd<3.5)
+     {return true;}
+      else
+     { return false;}
+
+  }// ---new
+
+
 
   @Override
   protected int getLayoutId() {

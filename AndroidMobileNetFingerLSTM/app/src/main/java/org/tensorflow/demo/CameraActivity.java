@@ -19,6 +19,7 @@ package org.tensorflow.demo;
 import android.Manifest;
 import android.app.Activity;
 import android.app.Fragment;
+import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.hardware.Camera;
@@ -26,15 +27,21 @@ import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.params.StreamConfigurationMap;
+import android.media.AudioManager;
 import android.media.Image;
 import android.media.Image.Plane;
 import android.media.ImageReader;
 import android.media.ImageReader.OnImageAvailableListener;
+import android.media.Ringtone;
+import android.media.RingtoneManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Trace;
+import android.os.Vibrator;
+import android.util.Log;
 import android.util.Size;
 import android.view.KeyEvent;
 import android.view.Surface;
@@ -56,6 +63,7 @@ import static org.tensorflow.demo.zMyFunctions.CLASSES;
 import static org.tensorflow.demo.zMyFunctions.findArgMax;
 import static org.tensorflow.demo.zMyFunctions.interpolateTo200andReorder;
 
+
 public abstract class CameraActivity extends Activity
     implements OnImageAvailableListener, Camera.PreviewCallback {
   private static final Logger LOGGER = new Logger();
@@ -66,7 +74,7 @@ public abstract class CameraActivity extends Activity
   private static final String PERMISSION_STORAGE = Manifest.permission.WRITE_EXTERNAL_STORAGE;
 
   private boolean debug = false;
-
+  private AudioManager audioManager;
   private Handler handler;
   private HandlerThread handlerThread;
   private boolean useCamera2API;
@@ -81,12 +89,15 @@ public abstract class CameraActivity extends Activity
   private Runnable postInferenceCallback;
   private Runnable imageConverter;
 
+  private static String abc="abc";
+
   @Override
   protected void onCreate(final Bundle savedInstanceState) {
+    Log.d(abc,"CameraActivity.java--onCreate called");
     LOGGER.d("onCreate " + this);
     super.onCreate(null);
     getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-
+    audioManager = (AudioManager) getApplicationContext().getSystemService(Context.AUDIO_SERVICE);
     setContentView(R.layout.activity_camera);
 
     if (hasPermission()) {
@@ -98,15 +109,21 @@ public abstract class CameraActivity extends Activity
 
 
   protected int[] getRgbBytes() {
+    Log.d(abc,"CameraActivity.java--getRgbBytes called");
+
     imageConverter.run();
     return rgbBytes;
   }
 
   protected int getLuminanceStride() {
+    Log.d(abc,"CameraActivity.java--getLuminanceStridecalled");
+
     return yRowStride;
   }
 
   protected byte[] getLuminance() {
+    Log.d(abc,"CameraActivity.java--getLuminancecalled");
+
     return yuvBytes[0];
   }
 
@@ -115,6 +132,8 @@ public abstract class CameraActivity extends Activity
    */
   @Override
   public void onPreviewFrame(final byte[] bytes, final Camera camera) {
+    Log.d(abc,"CameraActivity.java--onPreviewFrame called");
+
     if (isProcessingFrame) {
       LOGGER.w("Dropping frame!");
       return;
@@ -162,6 +181,8 @@ public abstract class CameraActivity extends Activity
    */
   @Override
   public void onImageAvailable(final ImageReader reader) {
+    Log.d(abc,"CameraActivity.java--onImageAvailable called");
+
     //We need wait until we have some size from onPreviewSizeChosen
     if (previewWidth == 0 || previewHeight == 0) {
       return;
@@ -225,12 +246,16 @@ public abstract class CameraActivity extends Activity
 
   @Override
   public synchronized void onStart() {
+    Log.d(abc,"CameraActivity.java--onStart called");
+
     LOGGER.d("onStart " + this);
     super.onStart();
   }
 
   @Override
   public synchronized void onResume() {
+    Log.d(abc,"CameraActivity.java--onResume called");
+
     LOGGER.d("onResume " + this);
     super.onResume();
 
@@ -241,6 +266,8 @@ public abstract class CameraActivity extends Activity
 
   @Override
   public synchronized void onPause() {
+    Log.d(abc,"CameraActivity.java--onPausecalled");
+
     LOGGER.d("onPause " + this);
 
     if (!isFinishing()) {
@@ -262,17 +289,23 @@ public abstract class CameraActivity extends Activity
 
   @Override
   public synchronized void onStop() {
+    Log.d(abc,"CameraActivity.java--onStop called");
+
     LOGGER.d("onStop " + this);
     super.onStop();
   }
 
   @Override
   public synchronized void onDestroy() {
+    Log.d(abc,"CameraActivity.java--onDestroy called");
+
     LOGGER.d("onDestroy " + this);
     super.onDestroy();
   }
 
   protected synchronized void runInBackground(final Runnable r) {
+    Log.d(abc,"CameraActivity.java--runInBackground called");
+
     if (handler != null) {
       handler.post(r);
     }
@@ -281,6 +314,8 @@ public abstract class CameraActivity extends Activity
   @Override
   public void onRequestPermissionsResult(
       final int requestCode, final String[] permissions, final int[] grantResults) {
+    Log.d(abc,"CameraActivity.java-onRequestPermissionsResult called");
+
     if (requestCode == PERMISSIONS_REQUEST) {
       if (grantResults.length > 0
           && grantResults[0] == PackageManager.PERMISSION_GRANTED
@@ -425,14 +460,17 @@ public abstract class CameraActivity extends Activity
 
   @Override
   public boolean onKeyDown(final int keyCode, final KeyEvent event) {
+    Log.d(abc,"CameraActivity.java-onKeyDown called");
 
     // ---new
+    System.out.println("Msg: " + keyCode);
     if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
+      Log.d(abc,"CameraActivity.java-onKeyDown volume down pressed");
 
         // print original x,y coordinates. inpStream <<x,y>, <x,y> ...>
-        for (ArrayList<Float> x : inpStream) {
+        /*for (ArrayList<Float> x : inpStream) {
         System.out.println("xxx2: " + (x.get(0)) + "," + (x.get(1)));
-        }
+        }*/
 
 
         final TensorFlowInferenceInterface inferenceInterface = new TensorFlowInferenceInterface(getAssets(), "frozen_model.pb");
@@ -456,6 +494,9 @@ public abstract class CameraActivity extends Activity
             inferenceInterface.fetch("dense/BiasAdd", outputs);
             Toast.makeText(CameraActivity.this, CLASSES[findArgMax(outputs)], Toast.LENGTH_LONG).show();
             System.out.println("xxx3: " + CLASSES[findArgMax(outputs)]);
+            triggerEvent(CLASSES[findArgMax(outputs)]);
+            //do stuff here
+
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -475,6 +516,80 @@ public abstract class CameraActivity extends Activity
     }
     return super.onKeyDown(keyCode, event);
   }
+  /*---new---*/
+  public void Trigger_classification() {
+
+      final TensorFlowInferenceInterface inferenceInterface = new TensorFlowInferenceInterface(getAssets(), "frozen_model.pb");
+      final String[] outputNames =  new String[] {"dense/BiasAdd"};
+      final float[] outputs = new float[10];
+      try {
+        float[] out = interpolateTo200andReorder(inpStream, 200);
+        int[] inp_len = {out.length/2};
+
+        int i = 0;
+        for (ArrayList<Float> x : inpStream) {
+          out[i] = x.get(0);
+          out[i+1] = x.get(1);
+          i = i + 2;
+        }
+
+        // tensorflow stuff
+        inferenceInterface.feed("Placeholder", out, 1,200,2);
+        inferenceInterface.feed("Placeholder_2", inp_len, 1);
+        inferenceInterface.run(outputNames, true);
+        inferenceInterface.fetch("dense/BiasAdd", outputs);
+        Toast.makeText(CameraActivity.this, CLASSES[findArgMax(outputs)], Toast.LENGTH_LONG).show();
+        System.out.println("xxx3: " + CLASSES[findArgMax(outputs)]);
+        triggerEvent(CLASSES[findArgMax(outputs)]);
+        //do stuff here
+
+      }
+      catch (Exception e) {
+        e.printStackTrace();
+      }
+      /*return true;*/
+  }
+  private void triggerEvent(String gesture) {
+    Log.d(abc,"CameraActivity.java-triggerEvent called");
+
+    if (gesture.equals("up")){
+
+      /*Switch On Ringer*/
+      audioManager.setRingerMode(AudioManager.RINGER_MODE_NORMAL);
+      audioManager.setStreamVolume (AudioManager.STREAM_RING,
+              audioManager.getStreamMaxVolume(AudioManager.STREAM_RING),0);
+      Uri notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+      Ringtone r = RingtoneManager.getRingtone(getApplicationContext(), notification);
+      r.play();
+      Toast.makeText(this, "Ringer on", Toast.LENGTH_SHORT).show();
+    } else if (gesture.equals("down")) {
+
+      /*Switch Off Ringer*/
+      audioManager.setRingerMode(AudioManager.RINGER_MODE_NORMAL);
+      audioManager.setStreamVolume (AudioManager.STREAM_RING,
+              0,AudioManager.ADJUST_MUTE);
+      Vibrator vibe = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+      vibe.vibrate(200);
+      Toast.makeText(this, "Ringer off", Toast.LENGTH_SHORT).show();
+    } else if (gesture.equals("Caret")) {
+
+      /*Switch on bluetooth*/
+      BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+      if (!mBluetoothAdapter.isEnabled()) {
+        mBluetoothAdapter.enable();
+      }
+      Toast.makeText(this, "Bluetooth on", Toast.LENGTH_SHORT).show();
+    } else if (gesture.equals("CheckMark")) {
+
+      /*Switch off bluetooth*/
+      BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+      if (mBluetoothAdapter.isEnabled()) {
+        mBluetoothAdapter.disable();
+      }
+      Toast.makeText(this, "Bluetooth off", Toast.LENGTH_SHORT).show();
+    }
+  }
+
 
   protected void readyForNextImage() {
     if (postInferenceCallback != null) {
