@@ -118,6 +118,9 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
   private static float[] floatValues = new float[99 * 99 * 3];
   private static final float IMAGE_MEAN = 128.0f;
   private static final float IMAGE_STD = 128.0f;
+  private static final float LATEST_FINGERTIP_X = 0.0f;
+  private static final float LATEST_FINGERTIP_Y = 0.0f;
+
   Bitmap finalCrop = null;
   // ---new
 
@@ -318,9 +321,9 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 
                 // https://developer.android.com/reference/android/graphics/RectF#RectF()
                 ArrayList<Float> temp = new ArrayList<>();
-                temp.add(480-location.bottom);          // (480-location.bottom) z2, (location.bottom) 5x.
+                temp.add(480-location.bottom+LATEST_FINGERTIP_Y);          // (480-location.bottom) z2, (location.bottom) 5x.
                   // also change this in storeImage()
-                temp.add(location.left);                // (location.left) z2, (640-location.left) 5x
+                temp.add(location.left+LATEST_FINGERTIP_X);                // (location.left) z2, (640-location.left) 5x
                 inpStream.add(temp);
                 boolean val;
                 val=inp_check();
@@ -437,6 +440,8 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
     inferenceInterface.feed("conv2d_1_input", floatValues, 1,99,99,3);
     inferenceInterface.run(outputNames, true);
     inferenceInterface.fetch(outputNames[0], outputs);
+    LATEST_FINGERTIP_X = outputs[0]/99.0*image.getWidth();
+    LATEST_FINGERTIP_Y =  outputs[1]/99.0*image.getHeight();
     System.out.println("xxx4: x: " + outputs[0] + " y: " + outputs[1]);
     return outputs;
   }
